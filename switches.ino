@@ -28,6 +28,26 @@ PINS
 
 Adafruit_BicolorMatrix displays[2] = { Adafruit_BicolorMatrix(), Adafruit_BicolorMatrix() };
 
+static const uint8_t PROGMEM
+  smile_bmp[] =
+    { B00111100,
+      B01000010,
+      B10100101,
+      B10000001,
+      B10100101,
+      B10011001,
+      B01000010,
+      B00111100 },
+  sad_bmp[] =
+    { B00111100,
+      B01000010,
+      B10100101,
+      B10000001,
+      B10011001,
+      B10100101,
+      B01000010,
+      B00111100 };
+
 #define BUTTON_COUNT 6
 const int btnPin[BUTTON_COUNT] = { 2, 3, 9, 8, 6, 7 };
 int btn[BUTTON_COUNT] = {0,0,0,0,0,0};
@@ -115,14 +135,50 @@ void display(int displayNum, String text, int color=LED_GREEN) {
   displays[displayNum].writeDisplay();
 }
 
+int mapLifeToColor(int life) {
+  int color = LED_GREEN;
+  if( life < 10 ) color = LED_YELLOW;
+  if( life < 5 ) color = LED_RED;
+  return color;
+}
+
 void setLife(int playerNum, int newLife) {
   lifeTotals[playerNum] = newLife;
-  int color = LED_GREEN;
-  if( newLife < 10 ) color = LED_YELLOW;
-  if( newLife < 5 ) color = LED_RED;
-  display(playerNum, String(newLife), color);
+  display(playerNum, String(newLife), mapLifeToColor(newLife));
+}
+
+bool displayFaces = false;
+void handleVictory() {
+  int victor;
+  if( lifeTotals[0] <= 0 ) {
+    victor = 1;
+  } else if( lifeTotals[1] <= 0 ) {
+    victor = 0;
+  } else return;
+
+
+  for (int i = 0; i < 3; i++) {
+
+    if( displayFaces ){
+      for (int p = 0; p < 2; p++) {
+        displays[p].clear();
+        displays[p].drawBitmap(0, 0, victor == p ? smile_bmp : sad_bmp, 8, 8, victor == p ? LED_GREEN : LED_YELLOW);
+        displays[p].writeDisplay();
+      }
+      delay(500);
+    } else {
+      for (int p = 0; p < 2; p++) {
+        display(p, String(lifeTotals[p]), mapLifeToColor(lifeTotals[p]));
+      }
+      delay(500);
+    }
+
+    displayFaces = !displayFaces;
+
+  }
 }
 
 void loop() {
   handleButtons();
+  handleVictory();
 }
