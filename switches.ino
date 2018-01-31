@@ -26,8 +26,7 @@ PINS
 #include <Adafruit_LEDBackpack.h>
 #include <Fonts/Picopixel.h>
 
-Adafruit_BicolorMatrix matrix1 = Adafruit_BicolorMatrix();
-Adafruit_BicolorMatrix matrix2 = Adafruit_BicolorMatrix();
+Adafruit_BicolorMatrix displays[2] = { Adafruit_BicolorMatrix(), Adafruit_BicolorMatrix() };
 
 const int btn1 = 2;
 const int btn2 = 3;
@@ -49,10 +48,13 @@ bool btn4pressed = false;
 bool btn5pressed = false;
 bool btn6pressed = false;
 
+const int INIT_LIFE = 20;
+int lifeTotals[2] = {0, 0};
+
 void setup() {
   Serial.begin(9600);
-  matrix1.begin(0x71);
-  matrix2.begin(0x70);
+  displays[0].begin(0x71);
+  displays[1].begin(0x70);
 
   Serial.print("Ready, on 9600");
 
@@ -63,29 +65,17 @@ void setup() {
   pinMode(btn5, INPUT);
   pinMode(btn6, INPUT);
 
-  int pos1[2] = {0, 5};
-  int pos2[2] = {2, 5};
+  displays[0].setFont(&Picopixel);
+  displays[0].setTextWrap(false);
+  displays[0].setTextSize(1);
+  displays[0].setRotation(3);
+  displays[1].setFont(&Picopixel);
+  displays[1].setTextWrap(false);
+  displays[1].setTextSize(1);
+  displays[1].setRotation(3);
 
-  matrix1.setFont(&Picopixel);
-  matrix1.setTextWrap(false);
-  matrix1.setTextSize(1);
-  matrix1.setRotation(3);
-  matrix1.setTextColor(LED_GREEN);
-  matrix1.clear();
-  matrix1.setCursor(pos1[0], pos1[1]);
-  matrix1.print("20");
-  matrix1.writeDisplay();
-
-  matrix2.setFont(&Picopixel);
-  matrix2.setTextWrap(false);
-  matrix2.setTextSize(1);
-  matrix2.setRotation(3);
-  matrix2.setTextColor(LED_YELLOW);
-  matrix2.clear();
-  matrix2.setCursor(pos2[0], pos2[1]);
-  matrix2.print("9");
-  matrix2.writeDisplay();
-
+  setLife(0, INIT_LIFE);
+  setLife(1, INIT_LIFE);
 }
 
 void handleButtons() {
@@ -148,6 +138,24 @@ void handleButtons() {
 
 void handleDisplay() {
 
+}
+
+void display(int displayNum, String text, int color=LED_GREEN) {
+  int pos[2] = { text.length() > 1 ? 0 : 2, 5};
+
+  displays[displayNum].setTextColor(color);
+  displays[displayNum].clear();
+  displays[displayNum].setCursor(pos[0], pos[1]);
+  displays[displayNum].print(text);
+  displays[displayNum].writeDisplay();
+}
+
+void setLife(int playerNum, int newLife) {
+  lifeTotals[playerNum] = newLife;
+  int color = LED_GREEN;
+  if( newLife < 10 ) color = LED_YELLOW;
+  if( newLife < 5 ) color = LED_RED;
+  display(playerNum, String(newLife));
 }
 
 void loop() {
