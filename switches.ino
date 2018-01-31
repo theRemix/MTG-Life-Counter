@@ -81,8 +81,8 @@ void handleButtons() {
     btn[i] = digitalRead(btnPin[i]);
 
     if (!btnpressed[i] && btn[i] == HIGH) {
-        Serial.print("PRESSED ");
-        Serial.println(i);
+        /* Serial.print("PRESSED "); */
+        /* Serial.println(i); */
         btnpressed[i] = true;
         handleButton(i);
     } else if(btnpressed[i] && btn[i] == LOW){
@@ -120,7 +120,7 @@ void setLife(int playerNum, int newLife) {
   int color = LED_GREEN;
   if( newLife < 10 ) color = LED_YELLOW;
   if( newLife < 5 ) color = LED_RED;
-  display(playerNum, String(newLife));
+  display(playerNum, String(newLife), color);
 }
 
 void loop() {
