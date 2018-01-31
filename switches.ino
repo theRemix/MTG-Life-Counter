@@ -3,11 +3,11 @@
 BUTTONS
 
 +---+ +---+ +---+ +---+
-| 1 | | 5 | | 6 | | 3 |
+| 0 | | 4 | | 5 | | 2 |
 +---+ +---+ +---+ +---+
 
 +---+ +---+ +---+ +---+
-| 2 | |   | |   | | 4 |
+| 1 | |   | |   | | 3 |
 +---+ +---+ +---+ +---+
 
 PINS
@@ -31,6 +31,7 @@ Adafruit_BicolorMatrix displays[2] = { Adafruit_BicolorMatrix(), Adafruit_Bicolo
 #define BUTTON_COUNT 6
 const int btnPin[BUTTON_COUNT] = { 2, 3, 9, 8, 6, 7 };
 int btn[BUTTON_COUNT] = {0,0,0,0,0,0};
+bool btnpressedLastVal[BUTTON_COUNT] = {false,false,false,false,false,false};
 bool btnpressed[BUTTON_COUNT] = {false,false,false,false,false,false};
 
 const int INIT_LIFE = 20;
@@ -60,8 +61,21 @@ void setup() {
   setLife(1, INIT_LIFE);
 }
 
+int resetButtonCombo[] = {0, 0};
+void doReset( int b1, int b2 ) {
+  resetButtonCombo[0] = resetButtonCombo[0] + b1;
+  resetButtonCombo[1] = resetButtonCombo[1] + b2;
+
+  if( resetButtonCombo[0] > 0 && resetButtonCombo[1] ) {
+    setLife(0, INIT_LIFE);
+    setLife(1, INIT_LIFE);
+    resetButtonCombo[0] = 0;
+    resetButtonCombo[1] = 0;
+  }
+}
+
+const int debounceDelay = 200;
 void handleButtons() {
-  int debounceDelay = 200;
 
   for (int i = 0, l = BUTTON_COUNT; i < l; i++) {
     btn[i] = digitalRead(btnPin[i]);
@@ -70,6 +84,7 @@ void handleButtons() {
         Serial.print("PRESSED ");
         Serial.println(i);
         btnpressed[i] = true;
+        handleButton(i);
     } else if(btnpressed[i] && btn[i] == LOW){
         btnpressed[i] = false;
         delay(debounceDelay);
@@ -79,8 +94,15 @@ void handleButtons() {
 
 }
 
-void handleDisplay() {
-
+void handleButton(int btnId) {
+  switch (btnId) {
+    case 0: return setLife(0, lifeTotals[0] + 1);
+    case 1: return setLife(0, lifeTotals[0] - 1);
+    case 2: return setLife(1, lifeTotals[1] + 1);
+    case 3: return setLife(1, lifeTotals[1] - 1);
+    case 4: return doReset(1, 0);
+    case 5: return doReset(0, 1);
+  }
 }
 
 void display(int displayNum, String text, int color=LED_GREEN) {
@@ -103,5 +125,4 @@ void setLife(int playerNum, int newLife) {
 
 void loop() {
   handleButtons();
-  handleDisplay();
 }
