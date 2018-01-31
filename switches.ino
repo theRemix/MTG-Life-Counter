@@ -21,6 +21,14 @@ PINS
 +---+ +---+ +---+ +---+
 
 */
+
+#include <Wire.h>
+#include <Adafruit_LEDBackpack.h>
+#include <Fonts/Picopixel.h>
+
+Adafruit_BicolorMatrix matrix1 = Adafruit_BicolorMatrix();
+Adafruit_BicolorMatrix matrix2 = Adafruit_BicolorMatrix();
+
 const int btn1 = 2;
 const int btn2 = 3;
 const int btn3 = 9;
@@ -43,6 +51,8 @@ bool btn6pressed = false;
 
 void setup() {
   Serial.begin(9600);
+  matrix1.begin(0x71);
+  matrix2.begin(0x70);
 
   Serial.print("Ready, on 9600");
 
@@ -52,9 +62,33 @@ void setup() {
   pinMode(btn4, INPUT);
   pinMode(btn5, INPUT);
   pinMode(btn6, INPUT);
+
+  int pos1[2] = {0, 5};
+  int pos2[2] = {2, 5};
+
+  matrix1.setFont(&Picopixel);
+  matrix1.setTextWrap(false);
+  matrix1.setTextSize(1);
+  matrix1.setRotation(3);
+  matrix1.setTextColor(LED_GREEN);
+  matrix1.clear();
+  matrix1.setCursor(pos1[0], pos1[1]);
+  matrix1.print("20");
+  matrix1.writeDisplay();
+
+  matrix2.setFont(&Picopixel);
+  matrix2.setTextWrap(false);
+  matrix2.setTextSize(1);
+  matrix2.setRotation(3);
+  matrix2.setTextColor(LED_YELLOW);
+  matrix2.clear();
+  matrix2.setCursor(pos2[0], pos2[1]);
+  matrix2.print("9");
+  matrix2.writeDisplay();
+
 }
 
-void loop() {
+void handleButtons() {
   int debounceDelay = 200;
   btn1down = digitalRead(btn1);
   btn2down = digitalRead(btn2);
@@ -110,5 +144,13 @@ void loop() {
       btn6pressed = false;
       delay(debounceDelay);
   }
+}
 
+void handleDisplay() {
+
+}
+
+void loop() {
+  handleButtons();
+  handleDisplay();
 }
