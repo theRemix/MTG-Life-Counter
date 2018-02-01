@@ -3,21 +3,21 @@
 BUTTONS
 
 +---+ +---+ +---+ +---+
-| 0 | | 4 | | 5 | | 2 |
+| 0 | |   | |   | | 2 |
 +---+ +---+ +---+ +---+
 
 +---+ +---+ +---+ +---+
-| 1 | |   | |   | | 3 |
+| 1 | | 4 | | 5 | | 3 |
 +---+ +---+ +---+ +---+
 
 PINS
 
 +---+ +---+ +---+ +---+
-| 2 | | 6 | | 7 | | 9 |
+| 2 | |   | |   | | 9 |
 +---+ +---+ +---+ +---+
 
 +---+ +---+ +---+ +---+
-| 3 | |   | |   | | 8 |
+| 3 | | 6 | | 7 | | 8 |
 +---+ +---+ +---+ +---+
 
 */
@@ -68,17 +68,14 @@ void setup() {
     pinMode(btnPin[i], INPUT);
   }
 
-  displays[0].setFont(&Picopixel);
-  displays[0].setTextWrap(false);
-  displays[0].setTextSize(1);
-  displays[0].setRotation(3);
-  displays[1].setFont(&Picopixel);
-  displays[1].setTextWrap(false);
-  displays[1].setTextSize(1);
-  displays[1].setRotation(3);
+  for (int p = 0, pl = 2; p < pl; p++) {
+    displays[i].setFont(&Picopixel);
+    displays[i].setTextWrap(false);
+    displays[i].setTextSize(1);
+    displays[i].setRotation(3);
+    setLife(i, INIT_LIFE);
+  }
 
-  setLife(0, INIT_LIFE);
-  setLife(1, INIT_LIFE);
 }
 
 int resetButtonCombo[] = {0, 0};
@@ -86,7 +83,7 @@ void doReset( int b1, int b2 ) {
   resetButtonCombo[0] = resetButtonCombo[0] + b1;
   resetButtonCombo[1] = resetButtonCombo[1] + b2;
 
-  if( resetButtonCombo[0] > 0 && resetButtonCombo[1] ) {
+  if( resetButtonCombo[0] > 0 && resetButtonCombo[1] > 0 ) {
     setLife(0, INIT_LIFE);
     setLife(1, INIT_LIFE);
     resetButtonCombo[0] = 0;
@@ -148,6 +145,7 @@ void setLife(int playerNum, int newLife) {
 }
 
 bool displayFaces = false;
+const int blinkFaceDelay = 500;
 void handleVictory() {
   int victor;
   if( lifeTotals[0] <= 0 ) {
@@ -157,25 +155,21 @@ void handleVictory() {
   } else return;
 
 
-  for (int i = 0; i < 3; i++) {
-
-    if( displayFaces ){
-      for (int p = 0; p < 2; p++) {
-        displays[p].clear();
-        displays[p].drawBitmap(0, 0, victor == p ? smile_bmp : sad_bmp, 8, 8, victor == p ? LED_GREEN : LED_YELLOW);
-        displays[p].writeDisplay();
-      }
-      delay(500);
-    } else {
-      for (int p = 0; p < 2; p++) {
-        display(p, String(lifeTotals[p]), mapLifeToColor(lifeTotals[p]));
-      }
-      delay(500);
+  if( displayFaces ){
+    for (int p = 0; p < 2; p++) {
+      displays[p].clear();
+      displays[p].drawBitmap(0, 0, victor == p ? smile_bmp : sad_bmp, 8, 8, victor == p ? LED_GREEN : LED_YELLOW);
+      displays[p].writeDisplay();
     }
-
-    displayFaces = !displayFaces;
-
+    delay(blinkFaceDelay);
+  } else {
+    for (int p = 0; p < 2; p++) {
+      display(p, String(lifeTotals[p]), mapLifeToColor(lifeTotals[p]));
+    }
+    delay(blinkFaceDelay);
   }
+
+  displayFaces = !displayFaces;
 }
 
 void loop() {
