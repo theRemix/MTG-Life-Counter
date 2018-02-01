@@ -68,14 +68,13 @@ void setup() {
     pinMode(btnPin[i], INPUT);
   }
 
-  for (int p = 0, pl = 2; p < pl; p++) {
+  for (int i = 0, l = 2; i < l; i++) {
     displays[i].setFont(&Picopixel);
     displays[i].setTextWrap(false);
     displays[i].setTextSize(1);
     displays[i].setRotation(3);
     setLife(i, INIT_LIFE);
   }
-
 }
 
 int resetButtonCombo[] = {0, 0};
