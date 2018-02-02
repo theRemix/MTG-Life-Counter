@@ -53,6 +53,12 @@ static const uint8_t PROGMEM
 #define INIT_LIFE 20
 #define KNOCK_DISTANCE 14
 
+// states
+#define INIT 0
+#define CHOOSING_PLAYER 1
+#define GAME_ON 2
+#define GAME_OVER 3
+
 const int btnPin[BUTTON_COUNT] = { 2, 3, 9, 8, 6, 7 };
 const int sonicTriggerPins[SONIC_COUNT] = {12, 10};
 const int sonicEchoPins[SONIC_COUNT] = {13, 11};
@@ -66,6 +72,7 @@ int  sonicDistances[SONIC_COUNT] = {0, 0};
 
 int lifeTotals[2] = {0, 0};
 int currentPlayerTurn = 0;
+int state = INIT;
 
 void setup() {
   Serial.begin(9600);
@@ -73,6 +80,7 @@ void setup() {
   displays[1].begin(0x70);
 
   Serial.print("Ready, on 9600");
+  state = INIT;
 
   for (int i = 0, l = SONIC_COUNT; i < l; i++) {
     pinMode(sonicTriggerPins[i], OUTPUT);
@@ -88,21 +96,80 @@ void setup() {
     displays[i].setTextWrap(false);
     displays[i].setTextSize(1);
     displays[i].setRotation(3);
-    setLife(i, INIT_LIFE);
+  }
+
+  randomizeFirstPlayer();
+}
+
+void clearDisplays() {
+  for (int i = 0; i < 2; i++) {
+    displays[i].clear();
+    displays[i].writeDisplay();
   }
 }
 
 int resetButtonCombo[] = {0, 0};
-void doReset( int b1, int b2 ) {
+void handleReset( int b1, int b2 ) {
   resetButtonCombo[0] = resetButtonCombo[0] + b1;
   resetButtonCombo[1] = resetButtonCombo[1] + b2;
 
   if( resetButtonCombo[0] > 0 && resetButtonCombo[1] > 0 ) {
-    setLife(0, INIT_LIFE);
-    setLife(1, INIT_LIFE);
-    resetButtonCombo[0] = 0;
-    resetButtonCombo[1] = 0;
+    doReset();
   }
+}
+
+void randomizeFirstPlayer() {
+  state = CHOOSING_PLAYER;
+  clearDisplays();
+
+  int speed = 5;
+  const int minCycles = 6;
+  const int maxCycles = 16;
+  int randomCycles = random(minCycles, maxCycles);
+  bool direction = false; // go "right" from player 0 to 1
+  for (int c = 0; c < randomCycles; c++) {
+    if( direction ){ // go "left"
+      for (int i = 8; i >= 0; i--) {
+        displays[1].drawPixel(i, 7, LED_YELLOW);
+        displays[1].writeDisplay();
+        delay(speed);
+        clearTurnIndicator(1);
+      }
+      for (int i = 8; i >= 0; i--) {
+        displays[0].drawPixel(i, 7, LED_YELLOW);
+        displays[0].writeDisplay();
+        delay(speed);
+        clearTurnIndicator(0);
+      }
+    } else { // go "right"
+      for (int i = 0; i < 8; i++) {
+        displays[0].drawPixel(i, 7, LED_YELLOW);
+        displays[0].writeDisplay();
+        delay(speed);
+        clearTurnIndicator(0);
+      }
+      for (int i = 0; i < 8; i++) {
+        displays[1].drawPixel(i, 7, LED_YELLOW);
+        displays[1].writeDisplay();
+        delay(speed);
+        clearTurnIndicator(1);
+      }
+    }
+    speed += c;
+    direction = !direction;
+  }
+  displays[direction ? 1 : 0].drawPixel(7, 7, LED_GREEN);
+  displays[direction ? 1 : 0].writeDisplay();
+  delay(1000);
+  doReset();
+}
+
+void doReset() {
+  setLife(0, INIT_LIFE);
+  setLife(1, INIT_LIFE);
+  resetButtonCombo[0] = 0;
+  resetButtonCombo[1] = 0;
+  state = GAME_ON;
 }
 
 const int debounceDelay = 200;
@@ -131,8 +198,8 @@ void handleButton(int btnId) {
     case 1: return setLife(0, lifeTotals[0] - 1);
     case 2: return setLife(1, lifeTotals[1] + 1);
     case 3: return setLife(1, lifeTotals[1] - 1);
-    case 4: return doReset(1, 0);
-    case 5: return doReset(0, 1);
+    case 4: return handleReset(1, 0);
+    case 5: return handleReset(0, 1);
   }
 }
 
@@ -263,7 +330,12 @@ void handleSonic() {
 }
 
 void loop() {
-  handleButtons();
-  handleVictory();
-  handleSonic();
+  if( state == GAME_ON || state == GAME_OVER )
+    handleButtons();
+
+  if( state == GAME_ON )
+    handleVictory();
+
+  if( state == GAME_ON )
+    handleSonic();
 }
