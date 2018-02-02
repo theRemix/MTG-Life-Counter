@@ -49,13 +49,23 @@ static const uint8_t PROGMEM
       B00111100 };
 
 #define BUTTON_COUNT 6
+#define SONIC_COUNT 2
+#define INIT_LIFE 20
+#define KNOCK_DISTANCE 14
+
 const int btnPin[BUTTON_COUNT] = { 2, 3, 9, 8, 6, 7 };
-int btn[BUTTON_COUNT] = {0,0,0,0,0,0};
+const int sonicTriggerPins[SONIC_COUNT] = {12, 10};
+const int sonicEchoPins[SONIC_COUNT] = {13, 11};
+
+int  btn[BUTTON_COUNT] = {0,0,0,0,0,0};
 bool btnpressedLastVal[BUTTON_COUNT] = {false,false,false,false,false,false};
 bool btnpressed[BUTTON_COUNT] = {false,false,false,false,false,false};
 
-const int INIT_LIFE = 20;
+long sonicDurations[SONIC_COUNT] = {0, 0};
+int  sonicDistances[SONIC_COUNT] = {0, 0};
+
 int lifeTotals[2] = {0, 0};
+int currentPlayerTurn = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -63,6 +73,11 @@ void setup() {
   displays[1].begin(0x70);
 
   Serial.print("Ready, on 9600");
+
+  for (int i = 0, l = SONIC_COUNT; i < l; i++) {
+    pinMode(sonicTriggerPins[i], OUTPUT);
+    pinMode(sonicEchoPins[i], INPUT);
+  }
 
   for (int i = 0, l = BUTTON_COUNT; i < l; i++) {
     pinMode(btnPin[i], INPUT);
@@ -143,6 +158,51 @@ void setLife(int playerNum, int newLife) {
   display(playerNum, String(newLife), mapLifeToColor(newLife));
 }
 
+void clearTurnIndicator(int playerNum) {
+  int x = playerNum == 0 ? 0 : 7;
+  for (int x = 0; x < 8; x++) {
+    displays[playerNum].drawPixel(x, 7, 0);
+  }
+  displays[playerNum].writeDisplay();
+}
+
+const int animationPlayerTurnSpeed = 15; // delay time
+void animatePlayerTurn(int opponentNum) {
+  int playerNum = opponentNum == 0 ? 1 : 0;
+
+  if( opponentNum == 0 ){
+    for (int i = 8; i >= 0; i--) {
+      displays[playerNum].drawPixel(i, 7, LED_YELLOW);
+      displays[playerNum].writeDisplay();
+      delay(animationPlayerTurnSpeed);
+      clearTurnIndicator(playerNum);
+    }
+    for (int i = 8; i >= 0; i--) {
+      displays[opponentNum].drawPixel(i, 7, LED_YELLOW);
+      displays[opponentNum].writeDisplay();
+      delay(animationPlayerTurnSpeed);
+      clearTurnIndicator(opponentNum);
+    }
+    displays[opponentNum].drawPixel(0, 7, LED_RED);
+    displays[opponentNum].writeDisplay();
+  } else {
+    for (int i = 0; i < 8; i++) {
+      displays[playerNum].drawPixel(i, 7, LED_YELLOW);
+      displays[playerNum].writeDisplay();
+      delay(animationPlayerTurnSpeed);
+      clearTurnIndicator(playerNum);
+    }
+    for (int i = 0; i < 8; i++) {
+      displays[opponentNum].drawPixel(i, 7, LED_YELLOW);
+      displays[opponentNum].writeDisplay();
+      delay(animationPlayerTurnSpeed);
+      clearTurnIndicator(opponentNum);
+    }
+    displays[opponentNum].drawPixel(7, 7, LED_RED);
+    displays[opponentNum].writeDisplay();
+  }
+}
+
 bool displayFaces = false;
 const int blinkFaceDelay = 500;
 void handleVictory() {
@@ -171,7 +231,39 @@ void handleVictory() {
   displayFaces = !displayFaces;
 }
 
+void handleSonic() {
+  for (int i = 0; i < 2; i++) {
+    // Clears the trigPin
+    digitalWrite(sonicTriggerPins[i], LOW);
+    delayMicroseconds(2);
+    // Sets the trigPin on HIGH state for 10 micro seconds
+    digitalWrite(sonicTriggerPins[i], HIGH);
+    delayMicroseconds(10);
+    digitalWrite(sonicTriggerPins[i], LOW);
+    // Reads the echoPin, returns the sound wave travel time in microseconds
+    sonicDurations[i] = pulseIn(sonicEchoPins[i], HIGH);
+    // Calculating the distance
+    sonicDistances[i] = sonicDurations[i]*0.034/2;
+
+    /* Serial.print("Distance "); Serial.print(i); Serial.print(": "); Serial.println(sonicDistances[i]); */
+  }
+
+  if(sonicDistances[0] < KNOCK_DISTANCE && currentPlayerTurn == 0) {
+    /* clearTurnIndicator(0); */
+    Serial.println("Player 1 KNOCKED");
+    currentPlayerTurn = 1;
+    animatePlayerTurn(currentPlayerTurn);
+  }
+  if(sonicDistances[1] < KNOCK_DISTANCE && currentPlayerTurn == 1) {
+    /* clearTurnIndicator(1); */
+    Serial.println("Player 2 KNOCKED");
+    currentPlayerTurn = 0;
+    animatePlayerTurn(currentPlayerTurn);
+  }
+}
+
 void loop() {
   handleButtons();
   handleVictory();
+  handleSonic();
 }
