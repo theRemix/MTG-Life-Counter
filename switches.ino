@@ -108,60 +108,101 @@ void clearDisplays() {
   }
 }
 
+void randomizeFirstPlayer() {
+  state = CHOOSING_PLAYER;
+  clearDisplays();
+
+  int speed = 5;
+  const int minCycles = 8;
+  const int maxCycles = 14;
+  randomSeed(analogRead(0));
+  long randomCycles = random(minCycles, maxCycles);
+  /* Serial.print("randomCycles : "); Serial.println(randomCycles); */
+  bool direction = false; // go "right" from player 0 to 1
+  for (int c = 0; c < randomCycles; c++) {
+    if( direction ){ // go "left"
+      for (int i = 6; i >= -1; i--) {
+        displays[1].setTextColor(LED_YELLOW);
+        displays[1].setCursor(i, 5);
+        displays[1].print("<");
+        displays[1].writeDisplay();
+        if (i == -1) {
+          displays[0].setTextColor(LED_YELLOW);
+          displays[0].setCursor(7, 5);
+          displays[0].print("<");
+          displays[0].writeDisplay();
+        }
+        delay(speed);
+        clearDisplays();
+      }
+      for (int i = 6; i >= 0; i--) {
+        displays[0].setTextColor(LED_YELLOW);
+        displays[0].setCursor(i, 5);
+        displays[0].print("<");
+        displays[0].writeDisplay();
+        delay(speed);
+        clearDisplays();
+      }
+    } else { // go "right"
+      for (int i = 0; i < 8; i++) {
+        displays[0].setTextColor(LED_YELLOW);
+        displays[0].setCursor(i, 5);
+        displays[0].print(">");
+        displays[0].writeDisplay();
+        if (i == 7) {
+          displays[1].setTextColor(LED_YELLOW);
+          displays[1].setCursor(-1, 5);
+          displays[1].print(">");
+          displays[1].writeDisplay();
+        }
+        delay(speed);
+        clearDisplays();
+      }
+      for (int i = 0; i < 6; i++) {
+        displays[1].setTextColor(LED_YELLOW);
+        displays[1].setCursor(i, 5);
+        displays[1].print(">");
+        displays[1].writeDisplay();
+        delay(speed);
+        clearDisplays();
+      }
+    }
+    speed += c*2;
+    direction = !direction;
+  }
+  if ( !direction ) { // flip because of last flip
+    displays[0].setTextColor(LED_GREEN);
+    displays[0].setCursor(0, 7);
+    displays[0].setTextSize(2);
+    displays[0].print("<");
+    displays[0].writeDisplay();
+  } else {
+    displays[1].setTextColor(LED_GREEN);
+    displays[1].setCursor(4, 7);
+    displays[1].setTextSize(2);
+    displays[1].print(">");
+    displays[1].writeDisplay();
+  }
+  delay(1000);
+  displays[0].setTextSize(1);
+  displays[1].setTextSize(1);
+  doReset();
+
+  if ( !direction ) {
+    animatePlayerTurn(0);
+  } else {
+    animatePlayerTurn(1);
+  }
+}
+
 int resetButtonCombo[] = {0, 0};
 void handleReset( int b1, int b2 ) {
   resetButtonCombo[0] = resetButtonCombo[0] + b1;
   resetButtonCombo[1] = resetButtonCombo[1] + b2;
 
   if( resetButtonCombo[0] > 0 && resetButtonCombo[1] > 0 ) {
-    doReset();
+    randomizeFirstPlayer();
   }
-}
-
-void randomizeFirstPlayer() {
-  state = CHOOSING_PLAYER;
-  clearDisplays();
-
-  int speed = 5;
-  const int minCycles = 6;
-  const int maxCycles = 16;
-  int randomCycles = random(minCycles, maxCycles);
-  bool direction = false; // go "right" from player 0 to 1
-  for (int c = 0; c < randomCycles; c++) {
-    if( direction ){ // go "left"
-      for (int i = 8; i >= 0; i--) {
-        displays[1].drawPixel(i, 7, LED_YELLOW);
-        displays[1].writeDisplay();
-        delay(speed);
-        clearTurnIndicator(1);
-      }
-      for (int i = 8; i >= 0; i--) {
-        displays[0].drawPixel(i, 7, LED_YELLOW);
-        displays[0].writeDisplay();
-        delay(speed);
-        clearTurnIndicator(0);
-      }
-    } else { // go "right"
-      for (int i = 0; i < 8; i++) {
-        displays[0].drawPixel(i, 7, LED_YELLOW);
-        displays[0].writeDisplay();
-        delay(speed);
-        clearTurnIndicator(0);
-      }
-      for (int i = 0; i < 8; i++) {
-        displays[1].drawPixel(i, 7, LED_YELLOW);
-        displays[1].writeDisplay();
-        delay(speed);
-        clearTurnIndicator(1);
-      }
-    }
-    speed += c;
-    direction = !direction;
-  }
-  displays[direction ? 1 : 0].drawPixel(7, 7, LED_GREEN);
-  displays[direction ? 1 : 0].writeDisplay();
-  delay(1000);
-  doReset();
 }
 
 void doReset() {
