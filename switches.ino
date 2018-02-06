@@ -13,11 +13,11 @@ BUTTONS
 PINS
 
 +---+ +---+ +---+ +---+
-| 2 | |   | |   | | 9 |
+| 9 | |   | |   | | 3 |
 +---+ +---+ +---+ +---+
 
 +---+ +---+ +---+ +---+
-| 3 | | 6 | | 7 | | 8 |
+| 8 | | 7 | | 6 | | 2 |
 +---+ +---+ +---+ +---+
 
 */
@@ -59,7 +59,7 @@ static const uint8_t PROGMEM
 #define GAME_ON 2
 #define GAME_OVER 3
 
-const int btnPin[BUTTON_COUNT] = { 2, 3, 9, 8, 6, 7 };
+const int btnPin[BUTTON_COUNT] = { 9, 8, 3, 2, 7, 6 };
 const int sonicTriggerPins[SONIC_COUNT] = {12, 10};
 const int sonicEchoPins[SONIC_COUNT] = {13, 11};
 
