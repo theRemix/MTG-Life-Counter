@@ -51,7 +51,7 @@ static const uint8_t PROGMEM
 #define BUTTON_COUNT 6
 #define SONIC_COUNT 2
 #define INIT_LIFE 20
-#define KNOCK_DISTANCE 14
+#define KNOCK_DISTANCE 8
 
 // states
 #define INIT 0
@@ -62,6 +62,8 @@ static const uint8_t PROGMEM
 const int btnPin[BUTTON_COUNT] = { 9, 8, 3, 2, 7, 6 };
 const int sonicTriggerPins[SONIC_COUNT] = {12, 10};
 const int sonicEchoPins[SONIC_COUNT] = {13, 11};
+unsigned long sonicLastDebounceTime = 0;
+const long sonicDebounceDelay = 1500;
 
 int  btn[BUTTON_COUNT] = {0,0,0,0,0,0};
 bool btnpressedLastVal[BUTTON_COUNT] = {false,false,false,false,false,false};
@@ -99,6 +101,8 @@ void setup() {
   }
 
   randomizeFirstPlayer();
+
+  sonicLastDebounceTime = millis();
 }
 
 void clearDisplays() {
@@ -190,8 +194,10 @@ void randomizeFirstPlayer() {
 
   if ( !direction ) {
     animatePlayerTurn(0);
+    currentPlayerTurn = 0;
   } else {
     animatePlayerTurn(1);
+    currentPlayerTurn = 1;
   }
 }
 
@@ -340,6 +346,11 @@ void handleVictory() {
 }
 
 void handleSonic() {
+
+  if((millis() - sonicLastDebounceTime) < sonicDebounceDelay){
+    return;
+  }
+
   for (int i = 0; i < 2; i++) {
     // Clears the trigPin
     digitalWrite(sonicTriggerPins[i], LOW);
@@ -357,16 +368,16 @@ void handleSonic() {
   }
 
   if(sonicDistances[0] < KNOCK_DISTANCE && currentPlayerTurn == 0) {
-    /* clearTurnIndicator(0); */
-    Serial.println("Player 1 KNOCKED");
+    /* Serial.println("Player 1 KNOCKED"); */
     currentPlayerTurn = 1;
     animatePlayerTurn(currentPlayerTurn);
+    sonicLastDebounceTime = millis();
   }
   if(sonicDistances[1] < KNOCK_DISTANCE && currentPlayerTurn == 1) {
-    /* clearTurnIndicator(1); */
-    Serial.println("Player 2 KNOCKED");
+    /* Serial.println("Player 2 KNOCKED"); */
     currentPlayerTurn = 0;
     animatePlayerTurn(currentPlayerTurn);
+    sonicLastDebounceTime = millis();
   }
 }
 
